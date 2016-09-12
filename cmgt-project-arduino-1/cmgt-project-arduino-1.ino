@@ -1,90 +1,63 @@
-// Define the number of samples to keep track of.  The higher the number,
-// the more the readings will be smoothed, but the slower the output will
-// respond to the input.  Using a constant rather than a normal variable lets
-// use this value to determine the size of the readings array.
-const int numReadings = 20;
+int motorPin = 3;
+int lightSensorPin = A0;
+int maxAmountOfLightSamples = 5;
+int lightSamplerCounter;
+int lightSamples[4];
+int amountOfLightAverage;
+bool samplingIsDone;
 
-int readings[numReadings];     
-int readIndex = 0;              
-int total = 0;                 
-int average = 0; 
-float tempNormal;  
-int previousTemp;             
-int checkTemp = 0;
-int tempPin = A1;
-int currentTemp;
-bool firstRun = true;
-
-void setup() {
-  // initialize serial communication with computer:
+void setup () {
+  pinMode(motorPin, OUTPUT);
+  pinMode(lightSensorPin, OUTPUT);
   Serial.begin(9600);
-  // initialize all the readings to 0:
-  for (int thisReading = 0; thisReading < numReadings; thisReading++) {
-    readings[thisReading] = 0;
-  }
-  // initialize digital pin 13 as an output.
-  pinMode(13, OUTPUT);
+  while (! Serial);
 }
 
-void loop() {
-  if (firstRun) {
-    checkTemp = 0;
-        previousTemp = analogRead(tempPin);
-       while (checkTemp < 5 ) {
-        currentTemp = analogRead(tempPin);
-       if (currentTemp == previousTemp){
-          checkTemp = checkTemp + 1;
-       } else if (checkTemp = 5) {
-        tempNormal = currentTemp;
-        Serial.println ("Gecralibeert op:" + (String)tempNormal);
-        tempNormal = tempNormal/10.000;
-        break;
-       } else {
-        checkTemp = 0;
+
+void loop () {
+
+  if (!samplingIsDone) {
+    delay(50);
+  }
+  
+  int amountOfLight = analogRead(lightSensorPin);
+
+  // When we need more samples add value to array.
+  if (lightSamplerCounter < maxAmountOfLightSamples) {
+    lightSamples[lightSamplerCounter] = amountOfLight;
+    lightSamplerCounter++;
+  }
+  
+  // When sampling is done calculate the average of all values in our array.
+  else if (!samplingIsDone) {
+    for (int i = 0; i < maxAmountOfLightSamples; i++) {
+      amountOfLightAverage += lightSamples[i];
+
+      if (i == maxAmountOfLightSamples - 1) {
+        samplingIsDone = true;
+        amountOfLightAverage /= maxAmountOfLightSamples;
+        Serial.println("AVERAGE: " + (String)amountOfLightAverage);
       }
-      previousTemp = currentTemp;
-      delay(500);
     }
   }
-firstRun = false;
 
-  float cel = average/10.000;
-  if (cel > tempNormal)
-{
-  digitalWrite(13, HIGH);   
-}
-else
-{
-  digitalWrite(13, LOW);    
-}
-  
-  // subtract the last reading:
-  total = total - readings[readIndex];
-  // read from the sensor:
-  readings[readIndex] = analogRead(tempPin);
-  // add the reading to the total:
-  total = total + readings[readIndex];
-  // advance to the next position in the array:
-  readIndex = readIndex + 1;
+//  Serial.println("=== BEGIN SAMPLES ===");
+//  
+//  for (int i = 0; i < maxAmountOfLightSamples; i++) {
+//    Serial.println(lightSamples[i]); 
+//  }
+//  
+//  Serial.println("=== END SAMPLES ===");
 
-  // if we're at the end of the array...
-  if (readIndex >= numReadings) {
-    // ...wrap around to the beginning:
-    readIndex = 0;
+  if (samplingIsDone) {
+    if (amountOfLight > 8) {
+      analogWrite(motorPin, 255);
+    } 
+    
+    else {
+      analogWrite(motorPin, LOW);
+    }  
   }
 
-  // calculate the average:
-  average = total / numReadings;
-  // send it to the computer as ASCII digits
-  Serial.print("TEMPERATURE = ");
-  Serial.print(cel);
-  Serial.print("*C");
-  Serial.println();
-  Serial.print("CHECKTEMP = ");
-  Serial.print(checkTemp);
-  Serial.println();
-  Serial.print("TEMPNORMAL = ");
-  Serial.print(tempNormal);
-  Serial.println();
-  delay(300);        // delay in between reads for stability
+  delay(50);
 }
