@@ -62,6 +62,9 @@ void loop () {
         delay(motorDelayAfterThreshold);
         motorIsRunning = true;
         analogWrite(motorPin, 255);
+        
+        // Let motor run for 300ms, this ensures that candle will be blown out of sure.
+        delay(300);
       }
     } 
 
