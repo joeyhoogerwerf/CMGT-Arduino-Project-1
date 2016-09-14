@@ -1,6 +1,8 @@
 const int motorPin = 3;
 const int lightSensorPin = A0;
 const int maxAmountOfLightSamples = 5;
+const int amountOfLightThreshold = 2;
+const int motorDelayAfterThreshold = 4000;
 int lightSamplerCounter;
 int lightSamples[4];
 int amountOfLightAverage;
@@ -53,21 +55,23 @@ void loop () {
   if (samplingIsDone) {
 
     // When amount of light exceeds average plus 4, start motor after 3 seconds.
-    if (amountOfLight > amountOfLightAverage + 4 && !motorIsRunning) {
+    if (amountOfLight > amountOfLightAverage + amountOfLightThreshold && !motorIsRunning) {
       Serial.println("motor is running");
 
       if (!motorIsRunning) {
-        delay(3000);
+        delay(motorDelayAfterThreshold);
         motorIsRunning = true;
         analogWrite(motorPin, 255);
       }
     } 
 
     // When amount of light is less than average, stop motor.
-    else if (amountOfLight <= amountOfLightAverage + 4) {
+    else if (amountOfLight <= amountOfLightAverage + amountOfLightThreshold) {
       Serial.println("motor stopped");
       motorIsRunning = false;
       analogWrite(motorPin, LOW);
     }  
   }
+
+//  analogWrite(motorPin, 255);
 }
